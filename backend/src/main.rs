@@ -4,24 +4,19 @@ use actix_web::{web, App, HttpRequest, HttpServer, Responder};
 extern crate diesel;
 extern crate dotenv;
 
-use diesel::pg::PgConnection;
+// use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 use std::env;
 
 pub mod schema;
 
-#[derive(Queryable)]
-pub struct Post {
-    pub id: u64,
-    pub title: String,
-    pub body: String,
-}
-
-pub fn establish_connection() -> PgConnection {
+pub fn establish_connection() -> SqliteConnection {
     let _ = dotenv::dotenv();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+    SqliteConnection::establish(&database_url)
+        .expect(&format!("Error connecting to {}", database_url))
 }
 
 async fn greet(req: HttpRequest) -> impl Responder {
@@ -31,12 +26,14 @@ async fn greet(req: HttpRequest) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let connection = establish_connection();
+
     HttpServer::new(|| {
         App::new()
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
     })
-    .bind("127.0.0.1:8080")?
+    .bind("127.0.0.1:8000")?
     .run()
     .await
 }
