@@ -1,15 +1,29 @@
-use actix_web::{web, App, HttpRequest, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder, Result};
 
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
 
-// use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use std::env;
 
+use serde::Deserialize;
+
 pub mod schema;
+
+#[derive(Queryable, Debug)]
+pub struct Post {
+    pub id: i32,
+    pub title: String,
+    pub body: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct NewPost {
+    title: String,
+    body: String,
+}
 
 pub fn establish_connection() -> SqliteConnection {
     let _ = dotenv::dotenv();
@@ -24,6 +38,12 @@ async fn greet(req: HttpRequest) -> impl Responder {
     format!("Hello {}!", &name)
 }
 
+/// extract `Info` using serde
+// #[post("/subjects/")]
+async fn index(post: web::Json<NewPost>) -> Result<impl Responder> {
+    Ok(format!("You typed: {:?}", post))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let connection = establish_connection();
@@ -32,6 +52,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
+        // .route("/subjects/{school}/posts", route)
     })
     .bind("127.0.0.1:8000")?
     .run()
