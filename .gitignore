@@ -1,3 +1,5 @@
+backend/target
+
 # Logs
 logs
 *.log
