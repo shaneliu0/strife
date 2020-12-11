@@ -4,6 +4,7 @@ use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder, Result}
 extern crate diesel;
 extern crate dotenv;
 
+use actix_files as fs;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use std::env;
@@ -33,10 +34,10 @@ pub fn establish_connection() -> SqliteConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
-async fn greet(req: HttpRequest) -> impl Responder {
-    let name = req.match_info().get("name").unwrap_or("World");
-    format!("Hello {}!", &name)
-}
+// async fn greet(req: HttpRequest) -> impl Responder {
+//     let name = req.match_info().get("name").unwrap_or("World");
+//     format!("Hello {}!", &name)
+// }
 
 async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
     Ok(format!("You typed: {:?}", post))
@@ -48,8 +49,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .route("/", web::get().to(greet))
             .route("/makepost", web::post().to(make_post))
+            // .service(fs::Files::new("/", "../frontend/public").index_file("index.html"))
+            .service(fs::Files::new("/", "../frontend/build").index_file("index.html"))
     })
     .bind("127.0.0.1:8000")?
     .run()
