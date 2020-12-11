@@ -45,6 +45,29 @@ class School extends Component {
 }
 
 class Subject extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            postsArray: [
+                {
+                    title: "How do I create a variable",
+                    body: "Whenever I try to create a variable in python like int x = 123, it gives me an error."
+                },
+                {
+                    title: "I love this class!",
+                    body: "This class is great! I'm learning a lot of interesting things"
+                }
+            ]
+        }
+    }
+
+    renderPosts() {
+        return this.state.postsArray.map((data, index) => {
+            
+        })
+    }
+
     render() {
         return <p>Subject with ID {this.props.subjectId}, school ID {this.props.schoolId}</p>
     }
