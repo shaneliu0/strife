@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
 import {
     // BrowserRouter as Router,
     // Switch,
@@ -9,9 +9,7 @@ import {
     // Redirect,
     useLocation
 } from "react-router-dom";
-import { Modal}
-
-import { Jumbotron } from "react-bootstrap";
+import { Jumbotron, Modal, Button } from "react-bootstrap";
 
 class School extends Component {
     constructor(props) {
@@ -47,37 +45,6 @@ class School extends Component {
 }
 
 class Subject extends Component {
-
-    newPostModal() {
-        const [show, setShow] = useState(false);
-      
-        const handleClose = () => setShow(false);
-        const handleShow = () => setShow(true);
-      
-        return (
-          <>
-            <Button variant="primary" onClick={handleShow}>
-              Launch demo modal
-            </Button>
-      
-            <Modal show={show} onHide={handleClose}>
-              <Modal.Header closeButton>
-                <Modal.Title>Modal heading</Modal.Title>
-              </Modal.Header>
-              <Modal.Body>Woohoo, you're reading this text in a modal!</Modal.Body>
-              <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose}>
-                  Close
-                </Button>
-                <Button variant="primary" onClick={handleClose}>
-                  Save Changes
-                </Button>
-              </Modal.Footer>
-            </Modal>
-          </>
-        );
-      }
-
     render() {
         return <p>Subject with ID {this.props.subjectId}, school ID {this.props.schoolId}</p>
     }
