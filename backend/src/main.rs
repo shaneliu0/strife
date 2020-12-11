@@ -38,9 +38,7 @@ async fn greet(req: HttpRequest) -> impl Responder {
     format!("Hello {}!", &name)
 }
 
-/// extract `Info` using serde
-// #[post("/subjects/")]
-async fn index(post: web::Json<NewPost>) -> Result<impl Responder> {
+async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
     Ok(format!("You typed: {:?}", post))
 }
 
@@ -51,8 +49,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .route("/", web::get().to(greet))
-            .route("/{name}", web::get().to(greet))
-        // .route("/subjects/{school}/posts", route)
+            .route("/makepost", web::post().to(make_post))
     })
     .bind("127.0.0.1:8000")?
     .run()
