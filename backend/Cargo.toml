@@ -1,0 +1,13 @@
+[package]
+name = "backend"
+version = "0.1.0"
+authors = ["Yusuf Redzic <yusufredzic@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "3.3.2"
+diesel = { version = "1.4.5", features = ["sqlite"] }
+dotenv = "0.15.0"
+serde = "1.0.118"

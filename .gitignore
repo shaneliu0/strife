@@ -1,3 +1,7 @@
+backend/target
+backend/.env
+backend/*.db
+
 # Logs
 logs
 *.log
