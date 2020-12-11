@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder, Result};
+use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result};
 
 #[macro_use]
 extern crate diesel;
@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use std::env;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub mod schema;
 
@@ -39,6 +39,18 @@ pub fn establish_connection() -> SqliteConnection {
 //     format!("Hello {}!", &name)
 // }
 
+#[derive(Serialize, Deserialize)]
+struct JsonResponse {
+    name: String,
+}
+
+#[get("/a/{name}")]
+async fn db_fetch(obj: web::Path<JsonResponse>) -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().json(JsonResponse {
+        name: obj.name.to_string(),
+    }))
+}
+
 async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
     Ok(format!("You typed: {:?}", post))
 }
@@ -50,10 +62,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .route("/makepost", web::post().to(make_post))
-            // .service(fs::Files::new("/", "../frontend/public").index_file("index.html"))
+            .service(db_fetch)
             .service(fs::Files::new("/", "../frontend/build").index_file("index.html"))
     })
-    .bind("127.0.0.1:8000")?
+    .bind("localhost:8000")?
     .run()
     .await
 }
