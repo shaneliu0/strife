@@ -10,7 +10,7 @@ function Main() {
   return (
     <Router>
       <div>
-        <Navbar style={{backgroundColor: "#F6AE2D"}} expand="lg">
+        <Navbar expand="lg">
           <LinkContainer to="/">
             <Navbar.Brand>
               <img

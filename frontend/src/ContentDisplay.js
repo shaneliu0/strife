@@ -9,7 +9,7 @@ import {
     // Redirect,
     useLocation
 } from "react-router-dom";
-import { Jumbotron, Modal, Button } from "react-bootstrap";
+import { Jumbotron, Modal, Button, Container, Row, Col, Card } from "react-bootstrap";
 
 class School extends Component {
     constructor(props) {
@@ -57,6 +57,10 @@ class Subject extends Component {
                 {
                     title: "I love this class!",
                     body: "This class is great! I'm learning a lot of interesting things"
+                },
+                {
+                    title: "Hello!!!",
+                    body: "world..."
                 }
             ]
         }
@@ -64,13 +68,34 @@ class Subject extends Component {
 
     renderPosts() {
         return this.state.postsArray.map((data, index) => {
-            
+            return <Col sm={4}><PostCard {...data} /></Col>
         })
     }
 
     render() {
-        return <p>Subject with ID {this.props.subjectId}, school ID {this.props.schoolId}</p>
+        return (
+            <Container style={{ marginTop: "20px" }}>
+                <Row>
+                    {this.renderPosts()}
+                </Row>
+            </Container>
+        )
     }
+}
+
+function PostCard(props) {
+    return (
+        <Card>
+            <Card.Body>
+                <Card.Title>{props.title}</Card.Title>
+                <Card.Text>
+                    {props.body}
+                </Card.Text>
+                <Button variant="primary">Comment</Button>
+            </Card.Body>
+        </Card>
+    )
+
 }
 
 function ContentDisplay() {

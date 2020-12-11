@@ -21,12 +21,7 @@ function MyVerticallyCenteredModal(props) {
       <Modal.Body>
         <h4>Get Started</h4>
         <p>
-          Cras mattis consectetur purus sit amet fermentum. Cras justo odio,
-          dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac
-          consectetur ac, vestibulum at eros.
-          Cras mattis consectetur purus sit amet fermentum. Cras justo odio,
-          dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac
-          consectetur ac, vestibulum at eros.
+          In order to read or post trife only asks for your highschool or college name 
         </p>
       </Modal.Body>
       <Modal.Footer>
@@ -44,3 +39,26 @@ function App() {
       <Button variant="primary" onClick={() => setModalShow(true)}>
         Launch vertically centered modal
       </Button>
+      <MyVerticallyCenteredModal
+        show={modalShow}
+        onHide={() => setModalShow(false)}
+      />
+    </>
+  );
+}
+
+function Landing() {
+  return (
+<Jumbotron fluid>
+  <Container>
+    <h1>Strife</h1>
+    <p>
+      Welcome to Strife, a chatting forum for highschool and college students.
+    </p>
+    <App/>
+  </Container>
+</Jumbotron>
+  )
+}
+
+export default Landing;

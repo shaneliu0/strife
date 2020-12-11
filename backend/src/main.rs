@@ -45,7 +45,7 @@ async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let connection = establish_connection();
+    // let connection = establish_connection();
 
     HttpServer::new(|| {
         App::new()
