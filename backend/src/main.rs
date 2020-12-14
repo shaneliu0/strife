@@ -1,3 +1,4 @@
+use crate::schema::posts;
 use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result};
 
 #[macro_use]
@@ -5,26 +6,35 @@ extern crate diesel;
 extern crate dotenv;
 
 use actix_files as fs;
-use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
+use diesel::{prelude::*, sqlite::Sqlite};
 use std::env;
 
 use serde::{Deserialize, Serialize};
 
 pub mod schema;
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Serialize, Deserialize, Clone)]
 pub struct Post {
     pub id: i32,
     pub title: String,
     pub body: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Insertable, Deserialize, Debug)]
+#[table_name = "posts"]
 pub struct NewPost {
     title: String,
     body: String,
 }
+
+// pub fn create_post<'a>(conn: &SqliteConnection, title: &'a str, body: &'a str) -> Post {
+//     let new_post = NewPost { title, body };
+//     diesel::insert_into(posts::table)
+//         .values(&new_post)
+//         .get_result(conn)
+//         .expect("error inserting into database")
+// }
 
 pub fn establish_connection() -> SqliteConnection {
     let _ = dotenv::dotenv();
@@ -39,15 +49,31 @@ pub fn establish_connection() -> SqliteConnection {
 //     format!("Hello {}!", &name)
 // }
 
-#[derive(Serialize, Deserialize)]
-struct JsonResponse {
-    name: String,
+#[derive(Serialize, Deserialize, Clone)]
+struct JsonPostResponse {
+    posts: Vec<Post>,
 }
 
-#[get("/a/{name}")]
-async fn db_fetch(obj: web::Path<JsonResponse>) -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(JsonResponse {
-        name: obj.name.to_string(),
+#[get("/allposts")]
+async fn db_fetch() -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().json(JsonPostResponse {
+        posts: vec![
+            Post {
+                id: 1,
+                title: "222".to_string(),
+                body: "f".to_string(),
+            },
+            Post {
+                id: 2,
+                title: "hey".to_string(),
+                body: "bruh".to_string(),
+            },
+            Post {
+                id: 3,
+                title: "epic website".to_string(),
+                body: "hi".to_string(),
+            },
+        ],
     }))
 }
 
@@ -58,6 +84,8 @@ async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // let connection = establish_connection();
+
+    // let post = create_post(&connection, "this is", "a test");
 
     HttpServer::new(|| {
         App::new()
