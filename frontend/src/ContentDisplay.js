@@ -1,17 +1,12 @@
 import React, { Component, useState } from 'react';
 import {
-    // BrowserRouter as Router,
-    // Switch,
-    // Route,
-    // Link,
-    // useRouteMatch,
-    // useParams,
-    // Redirect,
-    useLocation
+    useLocation,
+    withRouter,
+    useHistory
 } from "react-router-dom";
 import { Jumbotron, Modal, Button, Container, Row, Col, Card } from "react-bootstrap";
 
-class School extends Component {
+class PreSchool extends Component {
     constructor(props) {
         super(props);
 
@@ -31,7 +26,7 @@ class School extends Component {
 
     renderSubjectList() {
         return this.state.subjectArray.map((data, index) => {
-            return <p>{data.name}</p>
+            return <p onClick={() => this.props.history.push('hello')}>{data.name}</p>
         })
     }
 
@@ -43,6 +38,8 @@ class School extends Component {
         )
     }
 }
+
+const School = withRouter(PreSchool);
 
 class Subject extends Component {
     constructor(props) {
@@ -99,10 +96,12 @@ function PostCard(props) {
 }
 
 function ContentDisplay() {
+    // const { path } = use
     let { pathname } = useLocation();
     let pathArray = pathname.split('/');
     const schoolId = pathArray[1];
     const subjectId = pathArray[2];
+    const { history } = useHistory();
 
     if (schoolId && subjectId) {
         return (
