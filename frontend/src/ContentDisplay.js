@@ -5,6 +5,7 @@ import {
     useHistory
 } from "react-router-dom";
 import { Jumbotron, Modal, Button, Container, Row, Col, Card } from "react-bootstrap";
+import Skeleton from 'react-loading-skeleton';
 
 class PreSchool extends Component {
     constructor(props) {
@@ -46,21 +47,13 @@ class Subject extends Component {
         super(props);
 
         this.state = {
-            postsArray: [
-                {
-                    title: "How do I create a variable",
-                    body: "Whenever I try to create a variable in python like int x = 123, it gives me an error."
-                },
-                {
-                    title: "I love this class!",
-                    body: "This class is great! I'm learning a lot of interesting things"
-                },
-                {
-                    title: "Hello!!!",
-                    body: "world..."
-                }
-            ]
+            name: "Test Subject",
+            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined })
         }
+    }
+
+    componentDidMount() {
+        fetch('https://jsonplaceholder.typicode.com/posts').then(resp => resp.json()).then(resp => this.setState({postsArray: resp}))    
     }
 
     renderPosts() {
@@ -81,18 +74,21 @@ class Subject extends Component {
 }
 
 function PostCard(props) {
+    const cardStyle = {
+        margin: "10px"
+    }
+
     return (
-        <Card>
+        <Card style={cardStyle}>
             <Card.Body>
-                <Card.Title>{props.title}</Card.Title>
+                <Card.Title>{props.title || <Skeleton />}</Card.Title>
                 <Card.Text>
-                    {props.body}
+                    {props.body || <Skeleton count={10}/>}
                 </Card.Text>
                 <Button variant="primary">Comment</Button>
             </Card.Body>
         </Card>
     )
-
 }
 
 function ContentDisplay() {
