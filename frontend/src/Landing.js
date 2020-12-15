@@ -19,10 +19,10 @@ function Landing() {
             <Image src="https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885__340.jpg" ALIGN="right" />
             <br />
             <div style={{ fontSize: "18px" }}>
-            <p>
-              Welcome to <b>Strife</b>, a chatting forum for highschool and college students.
+              <p>
+                Welcome to <b>Strife</b>, a chatting forum for highschool and college students.
           </p>
-          </div>
+            </div>
             <br />
             <p>
               To read or view our posts, Strife asks for your <b>highschool or college name</b>.
