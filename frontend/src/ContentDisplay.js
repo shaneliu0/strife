@@ -4,7 +4,7 @@ import {
     withRouter,
     useHistory
 } from "react-router-dom";
-import { Jumbotron, Modal, Button, Container, Row, Col, Card } from "react-bootstrap";
+import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form } from "react-bootstrap";
 import Skeleton from 'react-loading-skeleton';
 
 class PreSchool extends Component {
@@ -12,22 +12,13 @@ class PreSchool extends Component {
         super(props);
 
         this.state = {
-            subjectArray: [
-                {
-                    name: "Advanced Software Dev",
-                    id: "293478234987234789"
-                },
-                {
-                    name: "AP Calc BC",
-                    id: "450986230948342089"
-                }
-            ]
+            subjectArray: new Array(10).fill({ name: undefined, id: undefined })
         }
     }
 
     renderSubjectList() {
         return this.state.subjectArray.map((data, index) => {
-            return <p onClick={() => this.props.history.push('hello')}>{data.name}</p>
+            return <SubjectRow {...data} />
         })
     }
 
@@ -42,6 +33,12 @@ class PreSchool extends Component {
 
 const School = withRouter(PreSchool);
 
+function SubjectRow(props) {
+    return (
+        <p>{props.name || <Skeleton />}</p>
+    )
+}
+
 class Subject extends Component {
     constructor(props) {
         super(props);
@@ -53,7 +50,7 @@ class Subject extends Component {
     }
 
     componentDidMount() {
-        fetch('https://jsonplaceholder.typicode.com/posts').then(resp => resp.json()).then(resp => this.setState({postsArray: resp}))    
+        fetch('https://jsonplaceholder.typicode.com/posts').then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
     }
 
     renderPosts() {
@@ -83,9 +80,9 @@ function PostCard(props) {
             <Card.Body>
                 <Card.Title>{props.title || <Skeleton />}</Card.Title>
                 <Card.Text>
-                    {props.body || <Skeleton count={10}/>}
+                    {props.body || <Skeleton count={10} />}
                 </Card.Text>
-                <Button variant="primary" onClick={commentModal}>Comment</Button>
+                <CommentModal />
                 <ButtonGroup aria-label="Vote Group">
                     <Button variant="success">Like</Button>
                     <Button variant="danger">Dislike</Button>
@@ -95,31 +92,34 @@ function PostCard(props) {
     )
 }
 
-function commentModal() {
-    const[show, setShow] = useState(false);
+function CommentModal() {
+    const [show, setShow] = React.useState(false);
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
     return (
-        <Modal>
-            <Modal.header>
-                <Modal.Title>aaa123</Modal.Title>
-            </Modal.header>
-            <Modal.Body>
-                <Form>
-                    <Form.Group controlId="formComment">
-                        <Form.Control type="comment" placeholder="Type comment here"/>
-                    </Form.Group>
-                </Form>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose}>
-                    Close
+        <>
+            <Modal>
+                <Modal.header>
+                    <Modal.Title>aaa123</Modal.Title>
+                </Modal.header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group controlId="formComment">
+                            <Form.Control type="comment" placeholder="Type comment here" />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
                 </Button>
-                <Button variant="primary" onClick={handleClose}>
-                    Submit
+                    <Button variant="primary" onClick={handleClose}>
+                        Submit
                 </Button>
-            </Modal.Footer>
-        </Modal>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="primary" onClick={() => setShow(true)}>Comment</Button>
+        </>
     )
 }
 
@@ -133,11 +133,12 @@ function ContentDisplay() {
 
     if (schoolId && subjectId) {
         return (
-            <Subject schoolId={schoolId} subjectId={subjectId} />
+            <Container><Subject schoolId={schoolId} subjectId={subjectId} /></Container>
+
         )
     } else if (schoolId || subjectId) {
         return (
-            <School schoolId={schoolId} />
+            <Container><School schoolId={schoolId} /></Container>
         )
     } else {
         return null;
