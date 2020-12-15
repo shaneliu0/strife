@@ -26,7 +26,7 @@ function Landing() {
             <br />
             <p>
               To read or view our posts, Strife asks for your <b>highschool or college name</b>.
-            <br /><br />We ensure that the rest of your identity will be anonymous.
+            <br /><br />We ensure that the rest of your identity will be <b>anonymous</b>.
           </p>
             <br />
             <div style={{ width: "45%" }}>
