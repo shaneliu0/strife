@@ -85,9 +85,41 @@ function PostCard(props) {
                 <Card.Text>
                     {props.body || <Skeleton count={10}/>}
                 </Card.Text>
-                <Button variant="primary">Comment</Button>
+                <Button variant="primary" onClick={commentModal}>Comment</Button>
+                <ButtonGroup aria-label="Vote Group">
+                    <Button variant="success">Like</Button>
+                    <Button variant="danger">Dislike</Button>
+                </ButtonGroup>
             </Card.Body>
         </Card>
+    )
+}
+
+function commentModal() {
+    const[show, setShow] = useState(false);
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    return (
+        <Modal>
+            <Modal.header>
+                <Modal.Title>aaa123</Modal.Title>
+            </Modal.header>
+            <Modal.Body>
+                <Form>
+                    <Form.Group controlId="formComment">
+                        <Form.Control type="comment" placeholder="Type comment here"/>
+                    </Form.Group>
+                </Form>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={handleClose}>
+                    Close
+                </Button>
+                <Button variant="primary" onClick={handleClose}>
+                    Submit
+                </Button>
+            </Modal.Footer>
+        </Modal>
     )
 }
 
