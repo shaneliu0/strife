@@ -16,6 +16,11 @@ class PreSchool extends Component {
         }
     }
 
+    componentDidMount() {
+        fetch('https://jsonplaceholder.typicode.com/comments').then(resp => resp.json())
+            .then((json) => this.setState({subjectArray: json}))
+    }
+
     renderSubjectList() {
         return this.state.subjectArray.map((data, index) => {
             return <SubjectRow {...data} />
