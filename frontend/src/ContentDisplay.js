@@ -39,8 +39,11 @@ class PreSchool extends Component {
 const School = withRouter(PreSchool);
 
 function SubjectRow(props) {
+    const history = useHistory();
+    const { pathname } = useLocation();
+
     return (
-        <p>{props.name || <Skeleton />}</p>
+        <p onClick={() => history.push(`${pathname}/${props.id}`)}>{props.name || <Skeleton />}</p>
     )
 }
 
