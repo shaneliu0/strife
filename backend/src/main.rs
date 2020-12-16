@@ -93,7 +93,7 @@ async fn main() -> std::io::Result<()> {
             .service(db_fetch)
             .service(fs::Files::new("/", "../frontend/build").index_file("index.html"))
     })
-    .bind("localhost:8000")?
+    .bind("localhost:8080")?
     .run()
     .await
 }
