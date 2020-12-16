@@ -56,7 +56,6 @@ struct JsonPostResponse {
     posts: Vec<Post>,
 }
 
-#[get("/allposts")]
 async fn db_fetch() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(JsonPostResponse {
         posts: vec![
@@ -96,7 +95,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .route("/api", web::post().to(make_post))
-            .service(db_fetch)
+            .route("/api", web::get().to(db_fetch))
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
                 web::resource("").route(web::get().to(react_index)).route(
