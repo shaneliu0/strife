@@ -1,5 +1,7 @@
 use crate::schema::posts;
-use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result};
+use actix_web::{
+    get, guard, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+};
 
 #[macro_use]
 extern crate diesel;
@@ -81,6 +83,10 @@ async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
     Ok(format!("You typed: {:?}", post))
 }
 
+async fn react_index() -> Result<actix_files::NamedFile> {
+    Ok(fs::NamedFile::open("../frontend/build/index.html")?)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // let connection = establish_connection();
@@ -91,7 +97,14 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .route("/makepost", web::post().to(make_post))
             .service(db_fetch)
-            .service(fs::Files::new("/", "../frontend/build").index_file("index.html"))
+            .service(fs::Files::new("/static", "../frontend/build/static"))
+            .default_service(
+                web::resource("").route(web::get().to(react_index)).route(
+                    web::route()
+                        .guard(guard::Not(guard::Get()))
+                        .to(|| HttpResponse::MethodNotAllowed()),
+                ),
+            )
     })
     .bind("localhost:8080")?
     .run()
