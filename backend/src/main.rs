@@ -95,7 +95,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .route("/makepost", web::post().to(make_post))
+            .route("/api", web::post().to(make_post))
             .service(db_fetch)
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
