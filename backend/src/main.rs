@@ -56,7 +56,7 @@ struct JsonPostResponse {
     posts: Vec<Post>,
 }
 
-async fn db_fetch() -> Result<HttpResponse> {
+async fn get_posts() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(JsonPostResponse {
         posts: vec![
             Post {
@@ -78,7 +78,7 @@ async fn db_fetch() -> Result<HttpResponse> {
     }))
 }
 
-async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
+async fn create_post(post: web::Form<NewPost>) -> Result<impl Responder> {
     Ok(format!("You typed: {:?}", post))
 }
 
@@ -94,8 +94,8 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .route("/api", web::post().to(make_post))
-            .route("/api", web::get().to(db_fetch))
+            .route("/api", web::post().to(create_post))
+            .route("/api", web::get().to(get_posts))
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
                 web::resource("").route(web::get().to(react_index)).route(
