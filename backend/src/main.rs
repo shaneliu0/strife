@@ -18,8 +18,6 @@ use diesel::{prelude::*, sqlite::Sqlite};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::posts::dsl::posts as posts_table;
-
 pub mod schema;
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
@@ -43,26 +41,24 @@ struct JsonPostResponse {
     posts: Vec<Post>,
 }
 
-async fn get_posts() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(JsonPostResponse {
-        posts: vec![
-            Post {
-                id: "1".to_string(),
-                title: Some("222".to_string()),
-                body: "f".to_string(),
-            },
-            Post {
-                id: "2".to_string(),
-                title: Some("hey".to_string()),
-                body: "bruh".to_string(),
-            },
-            Post {
-                id: "3".to_string(),
-                title: Some("epic website".to_string()),
-                body: "hi".to_string(),
-            },
-        ],
-    }))
+#[get("/api")]
+async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let conn = pool.get().unwrap();
+
+    let posts = web::block(move || get_all_posts(&conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    Ok(HttpResponse::Ok().json(posts))
+}
+
+pub fn get_all_posts(conn: &SqliteConnection) -> Result<Vec<Post>, diesel::result::Error> {
+    use crate::schema::posts::dsl::*;
+
+    posts.load::<Post>(conn)
 }
 
 pub fn insert_new_post(
@@ -70,15 +66,15 @@ pub fn insert_new_post(
     body: &str,
     conn: &SqliteConnection,
 ) -> Result<Post, diesel::result::Error> {
+    use crate::posts::dsl::posts;
+
     let new_post = Post {
         title: Some(title.to_string()),
         body: body.to_string(),
         id: Uuid::new_v4().to_string(),
     };
 
-    diesel::insert_into(posts_table)
-        .values(&new_post)
-        .execute(conn)?;
+    diesel::insert_into(posts).values(&new_post).execute(conn)?;
     Ok(new_post)
 }
 
@@ -138,11 +134,7 @@ async fn main() -> std::io::Result<()> {
     let _ = dotenv::dotenv();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let connection = SqliteConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url));
-
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
-
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to initialize database pool.");
@@ -151,7 +143,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(pool.clone())
             .service(create_post)
-            .route("/api", web::get().to(get_posts))
+            .service(get_post_by_id)
+            .service(get_posts)
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
                 web::resource("").route(web::get().to(react_index)).route(
