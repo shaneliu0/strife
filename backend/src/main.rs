@@ -1,5 +1,7 @@
 use crate::schema::posts;
-use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result};
+use actix_web::{
+    get, guard, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+};
 
 #[macro_use]
 extern crate diesel;
@@ -54,8 +56,7 @@ struct JsonPostResponse {
     posts: Vec<Post>,
 }
 
-#[get("/allposts")]
-async fn db_fetch() -> Result<HttpResponse> {
+async fn get_posts() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(JsonPostResponse {
         posts: vec![
             Post {
@@ -77,8 +78,12 @@ async fn db_fetch() -> Result<HttpResponse> {
     }))
 }
 
-async fn make_post(post: web::Form<NewPost>) -> Result<impl Responder> {
+async fn create_post(post: web::Form<NewPost>) -> Result<impl Responder> {
     Ok(format!("You typed: {:?}", post))
+}
+
+async fn react_index() -> Result<actix_files::NamedFile> {
+    Ok(fs::NamedFile::open("../frontend/build/index.html")?)
 }
 
 #[actix_web::main]
@@ -89,9 +94,16 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .route("/makepost", web::post().to(make_post))
-            .service(db_fetch)
-            .service(fs::Files::new("/", "../frontend/build").index_file("index.html"))
+            .route("/api", web::post().to(create_post))
+            .route("/api", web::get().to(get_posts))
+            .service(fs::Files::new("/static", "../frontend/build/static"))
+            .default_service(
+                web::resource("").route(web::get().to(react_index)).route(
+                    web::route()
+                        .guard(guard::Not(guard::Get()))
+                        .to(|| HttpResponse::MethodNotAllowed()),
+                ),
+            )
     })
     .bind("localhost:8080")?
     .run()
