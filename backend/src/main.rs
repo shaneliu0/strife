@@ -125,6 +125,26 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to initialize database pool.");
 
+    let port: u32 = match env::var("PORT").map(|s| s.parse::<u32>()) {
+        Ok(n) => match n {
+            Ok(n) => Some(n),
+            Err(e) => {
+                println!(
+                    "Port number failed to parse ({}), using default value...",
+                    e
+                );
+                None
+            }
+        },
+        Err(e) => {
+            println!("Port not specified ({}), using default value...", e);
+            None
+        }
+    }
+    .unwrap_or(8080);
+
+    println!("Starting server on port {}...", port);
+
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
@@ -140,7 +160,7 @@ async fn main() -> std::io::Result<()> {
                 ),
             )
     })
-    .bind("localhost:8080")?
+    .bind(format!("localhost:{}", port))?
     .run()
     .await
 }
