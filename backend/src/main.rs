@@ -1,8 +1,5 @@
 use crate::schema::posts;
-use actix_web::{
-    dev::HttpResponseBuilder, get, guard, post, web, App, HttpRequest, HttpResponse, HttpServer,
-    Responder, Result,
-};
+use actix_web::{get, guard, post, web, App, HttpResponse, HttpServer, Responder, Result};
 
 #[macro_use]
 extern crate diesel;
@@ -12,8 +9,8 @@ use actix_files as fs;
 use diesel::sqlite::SqliteConnection;
 use std::env;
 
+use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
-use diesel::{prelude::*, sqlite::Sqlite};
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -150,7 +147,7 @@ async fn main() -> std::io::Result<()> {
                 web::resource("").route(web::get().to(react_index)).route(
                     web::route()
                         .guard(guard::Not(guard::Get()))
-                        .to(|| HttpResponse::MethodNotAllowed()),
+                        .to(HttpResponse::MethodNotAllowed),
                 ),
             )
     })
