@@ -136,8 +136,8 @@ async fn main() -> std::io::Result<()> {
                 None
             }
         },
-        Err(e) => {
-            println!("Port not specified ({}), using default value...", e);
+        Err(_) => {
+            println!("Port not specified, using default value...");
             None
         }
     }
