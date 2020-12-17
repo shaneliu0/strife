@@ -67,7 +67,7 @@ async fn create_post(
     pool: web::Data<DbPool>,
     form: web::Json<models::NewPost>,
 ) -> Result<impl Responder> {
-    let conn = pool.get().expect("Failed to get db connection from pool.");
+    let conn = pool.get().unwrap();
 
     let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
 
@@ -107,8 +107,7 @@ async fn get_post_by_id(
     if let Some(post) = post {
         Ok(HttpResponse::Ok().json(post))
     } else {
-        let res = HttpResponse::NotFound().body(format!("No user found with uid: {}", user_uid));
-        Ok(res)
+        Ok(HttpResponse::NotFound().body(format!("No user found with uid: {}", user_uid)))
     }
 }
 
