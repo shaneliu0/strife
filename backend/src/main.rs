@@ -6,36 +6,23 @@ extern crate diesel;
 extern crate dotenv;
 
 use actix_files as fs;
-use diesel::sqlite::SqliteConnection;
 use std::env;
 
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
+use diesel::sqlite::SqliteConnection;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod models;
 pub mod schema;
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
-#[derive(Queryable, Debug, Serialize, Deserialize, Insertable, Clone)]
-pub struct Post {
-    pub id: String,
-    pub title: Option<String>,
-    pub body: String,
-}
-
-#[derive(Insertable, Deserialize, Debug)]
-#[table_name = "posts"]
-pub struct NewPost {
-    title: String,
-    body: String,
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 struct JsonPostResponse {
-    posts: Vec<Post>,
+    posts: Vec<models::Post>,
 }
 
 #[get("/api")]
@@ -52,20 +39,20 @@ async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(posts))
 }
 
-pub fn get_all_posts(conn: &SqliteConnection) -> Result<Vec<Post>, diesel::result::Error> {
+pub fn get_all_posts(conn: &SqliteConnection) -> Result<Vec<models::Post>, diesel::result::Error> {
     use crate::schema::posts::dsl::*;
 
-    posts.load::<Post>(conn)
+    posts.load::<models::Post>(conn)
 }
 
 pub fn insert_new_post(
     title: &str,
     body: &str,
     conn: &SqliteConnection,
-) -> Result<Post, diesel::result::Error> {
+) -> Result<models::Post, diesel::result::Error> {
     use crate::posts::dsl::posts;
 
-    let new_post = Post {
+    let new_post = models::Post {
         title: Some(title.to_string()),
         body: body.to_string(),
         id: Uuid::new_v4().to_string(),
@@ -76,7 +63,10 @@ pub fn insert_new_post(
 }
 
 #[post("/api")]
-async fn create_post(pool: web::Data<DbPool>, form: web::Json<NewPost>) -> Result<impl Responder> {
+async fn create_post(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewPost>,
+) -> Result<impl Responder> {
     let conn = pool.get().expect("Failed to get db connection from pool.");
 
     let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
@@ -87,12 +77,12 @@ async fn create_post(pool: web::Data<DbPool>, form: web::Json<NewPost>) -> Resul
 pub fn find_post_by_uid(
     uid: Uuid,
     conn: &SqliteConnection,
-) -> Result<Option<Post>, diesel::result::Error> {
+) -> Result<Option<models::Post>, diesel::result::Error> {
     use crate::schema::posts::dsl::*;
 
     let user = posts
         .filter(id.eq(uid.to_string()))
-        .first::<Post>(conn)
+        .first::<models::Post>(conn)
         .optional()?;
 
     Ok(user)
