@@ -9,16 +9,24 @@ extern crate dotenv;
 
 use actix_files as fs;
 use diesel::sqlite::SqliteConnection;
-use diesel::{prelude::*, sqlite::Sqlite};
 use std::env;
 
+use diesel::r2d2::{self, ConnectionManager};
+use diesel::{prelude::*, sqlite::Sqlite};
+
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::posts::dsl::posts as posts_table;
 
 pub mod schema;
 
-#[derive(Queryable, Debug, Serialize, Deserialize, Clone)]
+// pub type Connection = r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>;
+type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+
+#[derive(Queryable, Debug, Serialize, Deserialize, Insertable, Clone)]
 pub struct Post {
-    pub id: i32,
+    pub id: String,
     pub title: String,
     pub body: String,
 }
@@ -30,27 +38,6 @@ pub struct NewPost {
     body: String,
 }
 
-// pub fn create_post<'a>(conn: &SqliteConnection, title: &'a str, body: &'a str) -> Post {
-//     let new_post = NewPost { title, body };
-//     diesel::insert_into(posts::table)
-//         .values(&new_post)
-//         .get_result(conn)
-//         .expect("error inserting into database")
-// }
-
-pub fn establish_connection() -> SqliteConnection {
-    let _ = dotenv::dotenv();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url))
-}
-
-// async fn greet(req: HttpRequest) -> impl Responder {
-//     let name = req.match_info().get("name").unwrap_or("World");
-//     format!("Hello {}!", &name)
-// }
-
 #[derive(Serialize, Deserialize, Clone)]
 struct JsonPostResponse {
     posts: Vec<Post>,
@@ -60,17 +47,17 @@ async fn get_posts() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(JsonPostResponse {
         posts: vec![
             Post {
-                id: 1,
+                id: "1".to_string(),
                 title: "222".to_string(),
                 body: "f".to_string(),
             },
             Post {
-                id: 2,
+                id: "2".to_string(),
                 title: "hey".to_string(),
                 body: "bruh".to_string(),
             },
             Post {
-                id: 3,
+                id: "3".to_string(),
                 title: "epic website".to_string(),
                 body: "hi".to_string(),
             },
@@ -78,8 +65,31 @@ async fn get_posts() -> Result<HttpResponse> {
     }))
 }
 
-async fn create_post(post: web::Form<NewPost>) -> Result<impl Responder> {
-    Ok(format!("You typed: {:?}", post))
+pub fn insert_new_post(
+    title: &str,
+    body: &str,
+    conn: &SqliteConnection,
+) -> Result<Post, diesel::result::Error> {
+    let new_post = Post {
+        title: title.to_string(),
+        body: body.to_string(),
+        id: Uuid::new_v4().to_string(),
+    };
+
+    diesel::insert_into(posts_table)
+        .values(&new_post)
+        .execute(conn)?;
+    Ok(new_post)
+}
+
+#[post("/api")]
+async fn create_post(pool: web::Data<DbPool>, form: web::Json<NewPost>) -> Result<impl Responder> {
+    // Ok(format!("You typed: {:?}", post))
+    let conn = pool.get().expect("Failed to get db connection from pool.");
+
+    let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
+
+    Ok(HttpResponse::Ok().json(new_post))
 }
 
 async fn react_index() -> Result<actix_files::NamedFile> {
@@ -88,13 +98,22 @@ async fn react_index() -> Result<actix_files::NamedFile> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // let connection = establish_connection();
+    let _ = dotenv::dotenv();
 
-    // let post = create_post(&connection, "this is", "a test");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let connection = SqliteConnection::establish(&database_url)
+        .expect(&format!("Error connecting to {}", database_url));
 
-    HttpServer::new(|| {
+    let manager = ConnectionManager::<SqliteConnection>::new(database_url);
+
+    let pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to initialize database pool.");
+
+    HttpServer::new(move || {
         App::new()
-            .route("/api", web::post().to(create_post))
+            .data(pool.clone())
+            .service(create_post)
             .route("/api", web::get().to(get_posts))
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
