@@ -1,6 +1,7 @@
 use crate::schema::posts;
 use actix_web::{
-    get, guard, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+    dev::HttpResponseBuilder, get, guard, post, web, App, HttpRequest, HttpResponse, HttpServer,
+    Responder, Result,
 };
 
 #[macro_use]
@@ -21,13 +22,12 @@ use crate::posts::dsl::posts as posts_table;
 
 pub mod schema;
 
-// pub type Connection = r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>;
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Insertable, Clone)]
 pub struct Post {
     pub id: String,
-    pub title: String,
+    pub title: Option<String>,
     pub body: String,
 }
 
@@ -48,17 +48,17 @@ async fn get_posts() -> Result<HttpResponse> {
         posts: vec![
             Post {
                 id: "1".to_string(),
-                title: "222".to_string(),
+                title: Some("222".to_string()),
                 body: "f".to_string(),
             },
             Post {
                 id: "2".to_string(),
-                title: "hey".to_string(),
+                title: Some("hey".to_string()),
                 body: "bruh".to_string(),
             },
             Post {
                 id: "3".to_string(),
-                title: "epic website".to_string(),
+                title: Some("epic website".to_string()),
                 body: "hi".to_string(),
             },
         ],
@@ -71,7 +71,7 @@ pub fn insert_new_post(
     conn: &SqliteConnection,
 ) -> Result<Post, diesel::result::Error> {
     let new_post = Post {
-        title: title.to_string(),
+        title: Some(title.to_string()),
         body: body.to_string(),
         id: Uuid::new_v4().to_string(),
     };
@@ -84,12 +84,49 @@ pub fn insert_new_post(
 
 #[post("/api")]
 async fn create_post(pool: web::Data<DbPool>, form: web::Json<NewPost>) -> Result<impl Responder> {
-    // Ok(format!("You typed: {:?}", post))
     let conn = pool.get().expect("Failed to get db connection from pool.");
 
     let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
 
     Ok(HttpResponse::Ok().json(new_post))
+}
+
+pub fn find_post_by_uid(
+    uid: Uuid,
+    conn: &SqliteConnection,
+) -> Result<Option<Post>, diesel::result::Error> {
+    use crate::schema::posts::dsl::*;
+
+    let user = posts
+        .filter(id.eq(uid.to_string()))
+        .first::<Post>(conn)
+        .optional()?;
+
+    Ok(user)
+}
+
+#[get("/api/{user_id}")]
+async fn get_post_by_id(
+    pool: web::Data<DbPool>,
+    user_uid: web::Path<Uuid>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let user_uid = user_uid.into_inner();
+    let conn = pool.get().unwrap();
+
+    // use web::block to offload blocking Diesel code without blocking server thread
+    let post = web::block(move || find_post_by_uid(user_uid, &conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    if let Some(post) = post {
+        Ok(HttpResponse::Ok().json(post))
+    } else {
+        let res = HttpResponse::NotFound().body(format!("No user found with uid: {}", user_uid));
+        Ok(res)
+    }
 }
 
 async fn react_index() -> Result<actix_files::NamedFile> {
