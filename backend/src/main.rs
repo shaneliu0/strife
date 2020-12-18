@@ -67,16 +67,7 @@ async fn create_post(
     pool: web::Data<DbPool>,
     form: web::Json<models::NewPost>,
 ) -> Result<impl Responder> {
-    let conn = {
-        let x = pool.get();
-        if x.is_ok() {
-            println!("connection created");
-        } else {
-            println!("sqlite is probably not installed");
-        }
-        x
-    }
-    .unwrap();
+    let conn = pool.get().unwrap();
 
     let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
 
