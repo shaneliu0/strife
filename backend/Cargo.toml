@@ -14,6 +14,6 @@ dotenv = "0.15.0"
 serde = "1.0.118"
 uuid = { version = "0.8.1", features = ["serde", "v4"] }
 
-[dependencies.sqlite3-src]
-version = "0.2.12"
-features = ["bundled"]
+# [dependencies.sqlite3-src]
+# version = "0.2.12"
+# features = ["bundled"]
