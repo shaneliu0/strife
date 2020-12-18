@@ -88,7 +88,7 @@ pub fn find_post_by_uid(
     Ok(user)
 }
 
-#[get("/api/{user_id}")]
+#[get("/api/{post_id}")]
 async fn get_post_by_id(
     pool: web::Data<DbPool>,
     user_uid: web::Path<Uuid>,
