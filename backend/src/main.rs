@@ -48,14 +48,18 @@ pub fn get_all_posts(conn: &SqliteConnection) -> Result<Vec<models::Post>, diese
 pub fn insert_new_post(
     title: &str,
     body: &str,
+    school: &str,
+    subject: &str,
     conn: &SqliteConnection,
 ) -> Result<models::Post, diesel::result::Error> {
     use crate::posts::dsl::posts;
 
     let new_post = models::Post {
-        title: Some(title.to_string()),
-        body: body.to_string(),
         id: Uuid::new_v4().to_string(),
+        title: title.to_string(),
+        body: body.to_string(),
+        school_name: school.to_string(),
+        subject_name: subject.to_string(),
     };
 
     diesel::insert_into(posts).values(&new_post).execute(conn)?;
@@ -69,7 +73,16 @@ async fn create_post(
 ) -> Result<impl Responder> {
     let conn = pool.get().unwrap();
 
-    let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
+    let new_post = web::block(move || {
+        insert_new_post(
+            &form.title,
+            &form.body,
+            &form.school_name,
+            &form.subject_name,
+            &conn,
+        )
+    })
+    .await?;
 
     Ok(HttpResponse::Ok().json(new_post))
 }
