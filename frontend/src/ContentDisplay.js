@@ -14,11 +14,12 @@ class PreSchool extends Component {
         this.state = {
             subjectArray: new Array(10).fill({ name: undefined, id: undefined })
         }
+
     }
 
     componentDidMount() {
         fetch('https://jsonplaceholder.typicode.com/comments').then(resp => resp.json())
-            .then((json) => this.setState({subjectArray: json}))
+            .then((json) => this.setState({ subjectArray: json }))
     }
 
     renderSubjectList() {
@@ -30,7 +31,20 @@ class PreSchool extends Component {
     render() {
         return (
             <div>
-                {this.renderSubjectList()}
+                <div style={{ fontFamily: "Trebuchet MS" }}>
+                    <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "30px" }}>
+                            <br />
+                            <p> View and select from our subject list below.</p>
+                        </div>
+                    </div>
+                    <Button variant="warning" size="lg" block> General  </Button>
+                    <Button variant="warning" size="lg" block> Science </Button>
+                    <Button variant="warning" size="lg" block> English  </Button>
+                    <Button variant="warning" size="lg" block> History </Button>
+                    <Button variant="warning" size="lg" block> Math  </Button>
+                    {this.renderSubjectList()}
+                </div>
             </div>
         )
     }
@@ -40,7 +54,7 @@ const School = withRouter(PreSchool);
 
 function SubjectRow(props) {
     const history = useHistory();
-    const { pathname } = useLocation();
+    const { pathname } = useLocation();
 
     return (
         <p onClick={() => history.push(`${pathname}/${props.id}`)}>{props.name || <Skeleton />}</p>
@@ -138,7 +152,6 @@ function ContentDisplay() {
     const schoolId = pathArray[1];
     const subjectId = pathArray[2];
     const { history } = useHistory();
-
     if (schoolId && subjectId) {
         return (
             <Container><Subject schoolId={schoolId} subjectId={subjectId} /></Container>
