@@ -7,6 +7,22 @@ import {
 import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form } from "react-bootstrap";
 import Skeleton from 'react-loading-skeleton';
 
+async function postData(url = '', data = {}) {
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      redirect: 'follow',
+      referrerPolicy: 'no-referrer',
+      body: JSON.stringify(data)
+    });
+    return response.json();
+}  
+
 class PreSchool extends Component {
     constructor(props) {
         super(props);
@@ -67,12 +83,15 @@ class Subject extends Component {
 
         this.state = {
             name: "Test Subject",
-            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined })
+            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined }),
+            postForm: {
+                name: "shane"
+            }
         }
     }
 
     componentDidMount() {
-        fetch('https://jsonplaceholder.typicode.com/posts').then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
+        fetch(`https://jsonplaceholder.typicode.com/posts`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
     }
 
     renderPosts() {
@@ -84,6 +103,22 @@ class Subject extends Component {
     render() {
         return (
             <Container style={{ marginTop: "20px" }}>
+                <Row>
+                    <Col>
+                        <Form>
+                            <h3>Create a Post</h3>
+                            <Form.Group controlId="formBasicText">
+                                <Form.Control required placeholder="Title" />
+                            </Form.Group>
+                            <Form.Group controlId="formBasicText">
+                                <Form.Control as="textarea" rows={3} placeholder="Text" />
+                            </Form.Group>
+                            <Button variant="primary" type="submit">
+                                Submit
+                            </Button>
+                        </Form>
+                    </Col>
+                </Row>
                 <Row>
                     {this.renderPosts()}
                 </Row>
@@ -105,7 +140,7 @@ function PostCard(props) {
                     {props.body || <Skeleton count={10} />}
                 </Card.Text>
                 <CommentModal />
-                <ButtonGroup aria-label="Vote Group">
+                <ButtonGroup aria-label="Vote Group" size="sm" className="float-right">
                     <Button variant="success">Like</Button>
                     <Button variant="danger">Dislike</Button>
                 </ButtonGroup>
@@ -140,7 +175,7 @@ function CommentModal() {
                 </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="primary" onClick={() => setShow(true)}>Comment</Button>
+            <Button variant="primary" size="sm" onClick={() => setShow(true)}>Comment</Button>
         </>
     )
 }
