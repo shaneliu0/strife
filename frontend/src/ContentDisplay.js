@@ -126,7 +126,7 @@ function PostCard(props) {
                     {props.body || <Skeleton count={10} />}
                 </Card.Text>
                 <CommentModal />
-                <ButtonGroup aria-label="Vote Group">
+                <ButtonGroup aria-label="Vote Group" size="sm" className="float-right">
                     <Button variant="success">Like</Button>
                     <Button variant="danger">Dislike</Button>
                 </ButtonGroup>
@@ -161,7 +161,7 @@ function CommentModal() {
                 </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="primary" onClick={() => setShow(true)}>Comment</Button>
+            <Button variant="primary" size="sm" onClick={() => setShow(true)}>Comment</Button>
         </>
     )
 }
