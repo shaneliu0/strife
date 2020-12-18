@@ -7,6 +7,22 @@ import {
 import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form } from "react-bootstrap";
 import Skeleton from 'react-loading-skeleton';
 
+async function postData(url = '', data = {}) {
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      redirect: 'follow',
+      referrerPolicy: 'no-referrer',
+      body: JSON.stringify(data)
+    });
+    return response.json();
+}  
+
 class PreSchool extends Component {
     constructor(props) {
         super(props);
@@ -18,7 +34,7 @@ class PreSchool extends Component {
 
     componentDidMount() {
         fetch('https://jsonplaceholder.typicode.com/comments').then(resp => resp.json())
-            .then((json) => this.setState({subjectArray: json}))
+            .then((json) => this.setState({ subjectArray: json }))
     }
 
     renderSubjectList() {
@@ -40,7 +56,7 @@ const School = withRouter(PreSchool);
 
 function SubjectRow(props) {
     const history = useHistory();
-    const { pathname } = useLocation();
+    const { pathname } = useLocation();
 
     return (
         <p onClick={() => history.push(`${pathname}/${props.id}`)}>{props.name || <Skeleton />}</p>
@@ -53,12 +69,15 @@ class Subject extends Component {
 
         this.state = {
             name: "Test Subject",
-            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined })
+            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined }),
+            postForm: {
+                name: "shane"
+            }
         }
     }
 
     componentDidMount() {
-        fetch('https://jsonplaceholder.typicode.com/posts').then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
+        fetch(`https://jsonplaceholder.typicode.com/posts`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
     }
 
     renderPosts() {
@@ -70,6 +89,22 @@ class Subject extends Component {
     render() {
         return (
             <Container style={{ marginTop: "20px" }}>
+                <Row>
+                    <Col>
+                        <Form>
+                            <h3>Create a Post</h3>
+                            <Form.Group controlId="formBasicText">
+                                <Form.Control required placeholder="Title" />
+                            </Form.Group>
+                            <Form.Group controlId="formBasicText">
+                                <Form.Control as="textarea" rows={3} placeholder="Text" />
+                            </Form.Group>
+                            <Button variant="primary" type="submit">
+                                Submit
+                            </Button>
+                        </Form>
+                    </Col>
+                </Row>
                 <Row>
                     {this.renderPosts()}
                 </Row>
