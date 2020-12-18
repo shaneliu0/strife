@@ -25,8 +25,8 @@ struct JsonPostResponse {
     posts: Vec<models::Post>,
 }
 
-#[get("/api")]
-async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+#[get("/api/all")]
+async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, actix_web::Error> {
     let conn = pool.get().unwrap();
 
     let posts = web::block(move || get_all_posts(&conn))
@@ -148,9 +148,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
+            .service(get_posts)
             .service(create_post)
             .service(get_post_by_id)
-            .service(get_posts)
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
                 web::resource("").route(web::get().to(react_index)).route(
