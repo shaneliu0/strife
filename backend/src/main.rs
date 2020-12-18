@@ -1,85 +1,114 @@
 use crate::schema::posts;
-use actix_web::{
-    get, guard, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
-};
+use actix_web::{get, guard, post, web, App, HttpResponse, HttpServer, Responder, Result};
 
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
 
 use actix_files as fs;
-use diesel::sqlite::SqliteConnection;
-use diesel::{prelude::*, sqlite::Sqlite};
 use std::env;
 
-use serde::{Deserialize, Serialize};
+use diesel::prelude::*;
+use diesel::r2d2::{self, ConnectionManager};
+use diesel::sqlite::SqliteConnection;
 
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+pub mod models;
 pub mod schema;
 
-#[derive(Queryable, Debug, Serialize, Deserialize, Clone)]
-pub struct Post {
-    pub id: i32,
-    pub title: String,
-    pub body: String,
-}
-
-#[derive(Insertable, Deserialize, Debug)]
-#[table_name = "posts"]
-pub struct NewPost {
-    title: String,
-    body: String,
-}
-
-// pub fn create_post<'a>(conn: &SqliteConnection, title: &'a str, body: &'a str) -> Post {
-//     let new_post = NewPost { title, body };
-//     diesel::insert_into(posts::table)
-//         .values(&new_post)
-//         .get_result(conn)
-//         .expect("error inserting into database")
-// }
-
-pub fn establish_connection() -> SqliteConnection {
-    let _ = dotenv::dotenv();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url))
-}
-
-// async fn greet(req: HttpRequest) -> impl Responder {
-//     let name = req.match_info().get("name").unwrap_or("World");
-//     format!("Hello {}!", &name)
-// }
+type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct JsonPostResponse {
-    posts: Vec<Post>,
+    posts: Vec<models::Post>,
 }
 
-async fn get_posts() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(JsonPostResponse {
-        posts: vec![
-            Post {
-                id: 1,
-                title: "222".to_string(),
-                body: "f".to_string(),
-            },
-            Post {
-                id: 2,
-                title: "hey".to_string(),
-                body: "bruh".to_string(),
-            },
-            Post {
-                id: 3,
-                title: "epic website".to_string(),
-                body: "hi".to_string(),
-            },
-        ],
-    }))
+#[get("/api")]
+async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let conn = pool.get().unwrap();
+
+    let posts = web::block(move || get_all_posts(&conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    Ok(HttpResponse::Ok().json(posts))
 }
 
-async fn create_post(post: web::Form<NewPost>) -> Result<impl Responder> {
-    Ok(format!("You typed: {:?}", post))
+pub fn get_all_posts(conn: &SqliteConnection) -> Result<Vec<models::Post>, diesel::result::Error> {
+    use crate::schema::posts::dsl::*;
+
+    posts.load::<models::Post>(conn)
+}
+
+pub fn insert_new_post(
+    title: &str,
+    body: &str,
+    conn: &SqliteConnection,
+) -> Result<models::Post, diesel::result::Error> {
+    use crate::posts::dsl::posts;
+
+    let new_post = models::Post {
+        title: Some(title.to_string()),
+        body: body.to_string(),
+        id: Uuid::new_v4().to_string(),
+    };
+
+    diesel::insert_into(posts).values(&new_post).execute(conn)?;
+    Ok(new_post)
+}
+
+#[post("/api")]
+async fn create_post(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewPost>,
+) -> Result<impl Responder> {
+    let conn = pool.get().unwrap();
+
+    let new_post = web::block(move || insert_new_post(&form.title, &form.body, &conn)).await?;
+
+    Ok(HttpResponse::Ok().json(new_post))
+}
+
+pub fn find_post_by_uid(
+    uid: Uuid,
+    conn: &SqliteConnection,
+) -> Result<Option<models::Post>, diesel::result::Error> {
+    use crate::schema::posts::dsl::*;
+
+    let user = posts
+        .filter(id.eq(uid.to_string()))
+        .first::<models::Post>(conn)
+        .optional()?;
+
+    Ok(user)
+}
+
+#[get("/api/{user_id}")]
+async fn get_post_by_id(
+    pool: web::Data<DbPool>,
+    user_uid: web::Path<Uuid>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let user_uid = user_uid.into_inner();
+    let conn = pool.get().unwrap();
+
+    // use web::block to offload blocking Diesel code without blocking server thread
+    let post = web::block(move || find_post_by_uid(user_uid, &conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    if let Some(post) = post {
+        Ok(HttpResponse::Ok().json(post))
+    } else {
+        Ok(HttpResponse::NotFound().body(format!("No user found with uid: {}", user_uid)))
+    }
 }
 
 async fn react_index() -> Result<actix_files::NamedFile> {
@@ -88,24 +117,50 @@ async fn react_index() -> Result<actix_files::NamedFile> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // let connection = establish_connection();
+    let _ = dotenv::dotenv();
 
-    // let post = create_post(&connection, "this is", "a test");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let manager = ConnectionManager::<SqliteConnection>::new(database_url);
+    let pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to initialize database pool.");
 
-    HttpServer::new(|| {
+    let port: u32 = match env::var("PORT").map(|s| s.parse::<u32>()) {
+        Ok(n) => match n {
+            Ok(n) => Some(n),
+            Err(e) => {
+                println!(
+                    "Port number failed to parse ({}), using default value...",
+                    e
+                );
+                None
+            }
+        },
+        Err(_) => {
+            println!("Port not specified, using default value...");
+            None
+        }
+    }
+    .unwrap_or(8080);
+
+    println!("Starting server on port {}...", port);
+
+    HttpServer::new(move || {
         App::new()
-            .route("/api", web::post().to(create_post))
-            .route("/api", web::get().to(get_posts))
+            .data(pool.clone())
+            .service(create_post)
+            .service(get_post_by_id)
+            .service(get_posts)
             .service(fs::Files::new("/static", "../frontend/build/static"))
             .default_service(
                 web::resource("").route(web::get().to(react_index)).route(
                     web::route()
                         .guard(guard::Not(guard::Get()))
-                        .to(|| HttpResponse::MethodNotAllowed()),
+                        .to(HttpResponse::MethodNotAllowed),
                 ),
             )
     })
-    .bind("localhost:8080")?
+    .bind(format!("localhost:{}", port))?
     .run()
     .await
 }
