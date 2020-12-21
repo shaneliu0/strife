@@ -4,7 +4,7 @@ import {
     withRouter,
     useHistory
 } from "react-router-dom";
-import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form } from "react-bootstrap";
+import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form, ButtonToolbar, Badge } from "react-bootstrap";
 import Skeleton from 'react-loading-skeleton';
 
 async function postData(url = '', data = {}) {
@@ -131,6 +131,7 @@ function PostCard(props) {
     const cardStyle = {
         margin: "10px"
     }
+    const [modalShow, setModalShow] = React.useState(false);
 
     return (
         <Card style={cardStyle}>
@@ -139,46 +140,59 @@ function PostCard(props) {
                 <Card.Text>
                     {props.body || <Skeleton count={10} />}
                 </Card.Text>
-                <CommentModal />
+                <Button variant="primary" size="sm" onClick={() => setModalShow(true)}>
+                    Comment
+                </Button>
+                <CommentModal
+                    show={modalShow}
+                    onHide={() => setModalShow(false)}
+                />
                 <ButtonGroup aria-label="Vote Group" size="sm" className="float-right">
-                    <Button variant="success">Like</Button>
-                    <Button variant="danger">Dislike</Button>
+                    <Button variant="success">
+                        <span role="img" aria-label="thumbsup">👍</span>
+                        <Badge pill variant="light">31</Badge>
+                    </Button>
+                    <Button variant="danger">
+                        <span role="img" aria-label="thumbsdown">👎</span>
+                        <Badge pill variant="light">31</Badge>
+                    </Button>
                 </ButtonGroup>
             </Card.Body>
         </Card>
     )
 }
 
-function CommentModal() {
-    const [show, setShow] = React.useState(false);
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
+function CommentModal(props) {
     return (
-        <>
-            <Modal>
-                <Modal.header>
-                    <Modal.Title>aaa123</Modal.Title>
-                </Modal.header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group controlId="formComment">
-                            <Form.Control type="comment" placeholder="Type comment here" />
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                </Button>
-                    <Button variant="primary" onClick={handleClose}>
-                        Submit
-                </Button>
-                </Modal.Footer>
-            </Modal>
-            <Button variant="primary" size="sm" onClick={() => setShow(true)}>Comment</Button>
-        </>
-    )
-}
+      <Modal
+        {...props}
+        size="lg"
+        aria-labelledby="contained-modal-title-vcenter"
+        centered
+      >
+        <Modal.Header>
+          <Modal.Title id="contained-modal-title-vcenter">
+            Comment
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            <Form>
+                <Form.Group controlId="formComment">
+                <Form.Control type="comment" placeholder="Type comment here" />
+                </Form.Group>
+                <ButtonToolbar aria-label="Submit and cancel button groups">
+                    <ButtonGroup className="mr-2" aria-label="First Group">
+                        <Button onClick={props.onHide}>Submit</Button>
+                    </ButtonGroup>
+                    <ButtonGroup aria-label="Second Group">
+                        <Button variant="secondary" onClick={props.onHide}>Cancel</Button>
+                    </ButtonGroup>
+                </ButtonToolbar>
+            </Form>
+        </Modal.Body>
+      </Modal>
+    );
+  }
 
 function ContentDisplay() {
     // const { path } = use
