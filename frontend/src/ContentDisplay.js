@@ -34,8 +34,16 @@ class PreSchool extends Component {
     }
 
     componentDidMount() {
-        fetch('https://jsonplaceholder.typicode.com/comments').then(resp => resp.json())
-            .then((json) => this.setState({ subjectArray: json }))
+        // fetch('https://jsonplaceholder.typicode.com/comments').then(resp => resp.json())
+        //     .then((json) => this.setState({ subjectArray: json }))
+        this.setState({
+            subjectArray: [
+                { name: "Math", id: "000000" },
+                { name: "Science", id: "000001" },
+                { name: "English", id: "000002" },
+                { name: "Social Studies", id: "000003" }
+            ]
+        })
     }
 
     renderSubjectList() {
@@ -95,13 +103,13 @@ class Subject extends Component {
     }
 
     renderPosts() {
-        return this.state.postsArray.map((data, index) => {
+        return this.state.postsArray.reverse().map((data, index) => {
             return <Col sm={4}><PostCard {...data} /></Col>
         })
     }
 
     async handlePost() {
-        console.log(this.titleInputRef.current.value, this.bodyInputRef.current.value)
+        if (!(this.titleInputRef.current.value || this.bodyInputRef.current.value)) return;
         
         await postData(`${window.location.origin}/api`, {
             title: this.titleInputRef.current.value,
