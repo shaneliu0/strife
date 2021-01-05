@@ -141,22 +141,26 @@ function PostCard(props) {
                     {props.body || <Skeleton count={10} />}
                 </Card.Text>
                 <Button variant="primary" size="sm" onClick={() => setModalShow(true)}>
-                    Comment
+                    Comments
                 </Button>
                 <CommentModal
                     show={modalShow}
                     onHide={() => setModalShow(false)}
                 />
-                <ButtonGroup aria-label="Vote Group" size="sm" className="float-right">
-                    <Button variant="success">
-                        <span role="img" aria-label="thumbsup">👍</span>
-                        <Badge pill variant="light">31</Badge>
-                    </Button>
-                    <Button variant="danger">
-                        <span role="img" aria-label="thumbsdown">👎</span>
-                        <Badge pill variant="light">31</Badge>
-                    </Button>
-                </ButtonGroup>
+                <ButtonToolbar aria-label="Like and dislike button groups" className="float-right">
+                    <ButtonGroup aria-label="Vote Group" size="sm" className="mr-1">
+                        <Button variant="success">
+                            <span role="img" aria-label="thumbsup">👍</span>
+                            <Badge pill variant="light">0</Badge>
+                        </Button>
+                    </ButtonGroup>
+                    <ButtonGroup aria-label="Second group" size="sm">
+                        <Button variant="danger">
+                            <span role="img" aria-label="thumbsdown">👎</span>
+                            <Badge pill variant="light">0</Badge>
+                        </Button>
+                    </ButtonGroup>
+                </ButtonToolbar>
             </Card.Body>
         </Card>
     )
@@ -172,7 +176,7 @@ function CommentModal(props) {
       >
         <Modal.Header>
           <Modal.Title id="contained-modal-title-vcenter">
-            Comment
+            Create a Comment
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -180,7 +184,7 @@ function CommentModal(props) {
                 <Form.Group controlId="formComment">
                 <Form.Control type="comment" placeholder="Type comment here" />
                 </Form.Group>
-                <ButtonToolbar aria-label="Submit and cancel button groups">
+                <ButtonToolbar aria-label="Submit and cancel button groups" className="float-right">
                     <ButtonGroup className="mr-2" aria-label="First Group">
                         <Button onClick={props.onHide}>Submit</Button>
                     </ButtonGroup>
@@ -189,6 +193,32 @@ function CommentModal(props) {
                     </ButtonGroup>
                 </ButtonToolbar>
             </Form>
+            <br />
+            <br />
+            <Card>
+                <Card.Body>
+                    <Card.Text>asjfjafj</Card.Text>
+                    <ButtonToolbar aria-label="Like and dislike button groups" className="float-left">
+                    <ButtonGroup aria-label="First group" size="sm" className="mr-1">
+                        <Button variant="dark">
+                            Reply
+                        </Button>
+                    </ButtonGroup>
+                    <ButtonGroup aria-label="Second group" size="sm" className="mr-1">
+                        <Button variant="success">
+                            <span role="img" aria-label="thumbsup">👍</span>
+                            <Badge pill variant="light">0</Badge>
+                        </Button>
+                    </ButtonGroup>
+                    <ButtonGroup aria-label="Third group" size="sm">
+                        <Button variant="danger">
+                            <span role="img" aria-label="thumbsdown">👎</span>
+                            <Badge pill variant="light">0</Badge>
+                        </Button>
+                    </ButtonGroup>
+                    </ButtonToolbar>
+                </Card.Body>
+            </Card>
         </Modal.Body>
       </Modal>
     );
