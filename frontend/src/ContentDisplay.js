@@ -54,11 +54,11 @@ class PreSchool extends Component {
                             <p> View and select from our subject list below.</p>
                         </div>
                     </div>
-                    <Button variant="warning" size="lg" block> General  </Button>
+                    {/* <Button variant="warning" size="lg" block> General  </Button>
                     <Button variant="warning" size="lg" block> Science </Button>
                     <Button variant="warning" size="lg" block> English  </Button>
                     <Button variant="warning" size="lg" block> History </Button>
-                    <Button variant="warning" size="lg" block> Math  </Button>
+                    <Button variant="warning" size="lg" block> Math  </Button> */}
                     {this.renderSubjectList()}
                 </div>
             </div>
@@ -73,7 +73,7 @@ function SubjectRow(props) {
     const { pathname } = useLocation();
 
     return (
-        <p onClick={() => history.push(`${pathname}/${props.id}`)}>{props.name || <Skeleton />}</p>
+        <Button variant="warning" size="lg" block onClick={() => history.push(`${pathname}/${props.id}`)}>{props.name || <Skeleton />}</Button>
     )
 }
 
@@ -81,12 +81,12 @@ class Subject extends Component {
     constructor(props) {
         super(props);
 
+        this.titleInputRef = React.createRef();
+        this.bodyInputRef = React.createRef();
+        
         this.state = {
             name: "Test Subject",
             postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined }),
-            postForm: {
-                name: "shane"
-            }
         }
     }
 
@@ -100,6 +100,10 @@ class Subject extends Component {
         })
     }
 
+    handlePost() {
+        console.log(this.titleInputRef.current.value, this.bodyInputRef.current.value)
+    }
+
     render() {
         return (
             <Container style={{ marginTop: "20px" }}>
@@ -108,12 +112,12 @@ class Subject extends Component {
                         <Form>
                             <h3>Create a Post</h3>
                             <Form.Group controlId="formBasicText">
-                                <Form.Control required placeholder="Title" />
+                                <Form.Control ref={this.titleInputRef} required placeholder="Title" />
                             </Form.Group>
                             <Form.Group controlId="formBasicText">
-                                <Form.Control as="textarea" rows={3} placeholder="Text" />
+                                <Form.Control ref={this.bodyInputRef} as="textarea" rows={3} placeholder="Text" />
                             </Form.Group>
-                            <Button variant="primary" type="submit">
+                            <Button onClick={() => this.handlePost()} variant="primary">
                                 Submit
                             </Button>
                         </Form>
