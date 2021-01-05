@@ -2,8 +2,9 @@
 CREATE TABLE posts
 (
     id VARCHAR NOT NULL PRIMARY KEY,
-    school_name TEXT NOT NULL,
+    school_id TEXT NOT NULL,
     subject_name TEXT NOT NULL,
     title TEXT NOT NULL,
-    body TEXT NOT NULL
+    body TEXT NOT NULL,
+    timestamp INTEGER NOT NULL
 )

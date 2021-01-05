@@ -13,6 +13,7 @@ use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
 
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 pub mod models;
@@ -58,8 +59,13 @@ pub fn insert_new_post(
         id: Uuid::new_v4().to_string(),
         title: title.to_string(),
         body: body.to_string(),
-        school_name: school.to_string(),
+        school_id: school.to_string(),
         subject_name: subject.to_string(),
+        timestamp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            // I'm not really sure if this is correct
+            .unwrap_or_else(|e| e.duration())
+            .as_secs() as i32,
     };
 
     diesel::insert_into(posts).values(&new_post).execute(conn)?;
@@ -77,7 +83,7 @@ async fn create_post(
         insert_new_post(
             &form.title,
             &form.body,
-            &form.school_name,
+            &form.school_id,
             &form.subject_name,
             &conn,
         )
