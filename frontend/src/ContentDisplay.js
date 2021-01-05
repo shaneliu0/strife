@@ -86,12 +86,12 @@ class Subject extends Component {
         
         this.state = {
             name: "Test Subject",
-            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined }),
+            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined, timestemp: undefined }),
         }
     }
 
     componentDidMount() {
-        fetch(`https://jsonplaceholder.typicode.com/posts`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
+        fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
     }
 
     renderPosts() {
@@ -100,8 +100,17 @@ class Subject extends Component {
         })
     }
 
-    handlePost() {
+    async handlePost() {
         console.log(this.titleInputRef.current.value, this.bodyInputRef.current.value)
+        
+        await postData(`${window.location.origin}/api`, {
+            title: this.titleInputRef.current.value,
+            body: this.bodyInputRef.current.value,
+            school_id: "pwest",
+            subject_name: this.state.name
+        })
+
+        fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
     }
 
     render() {
@@ -109,7 +118,10 @@ class Subject extends Component {
             <Container style={{ marginTop: "20px" }}>
                 <Row>
                     <Col>
-                        <Form>
+                        <Form style={{
+                            marginLeft: "10px",
+                            marginRight: "10px"
+                        }}>
                             <h3>Create a Post</h3>
                             <Form.Group controlId="formBasicText">
                                 <Form.Control ref={this.titleInputRef} required placeholder="Title" />
