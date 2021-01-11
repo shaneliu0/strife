@@ -120,12 +120,10 @@ pub fn find_post_by_uid(
 ) -> Result<Option<models::Post>, diesel::result::Error> {
     use crate::schema::posts::dsl::*;
 
-    let user = posts
+    Ok(posts
         .filter(id.eq(uid.to_string()))
         .first::<models::Post>(conn)
-        .optional()?;
-
-    Ok(user)
+        .optional()?)
 }
 
 #[get("/api/{post_id}")]
