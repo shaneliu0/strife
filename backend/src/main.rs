@@ -5,6 +5,8 @@ use actix_web::{get, guard, post, web, App, HttpResponse, HttpServer, Responder,
 extern crate diesel;
 extern crate dotenv;
 
+use crate::models::Post;
+
 use actix_files as fs;
 use std::env;
 
@@ -36,6 +38,25 @@ async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, actix_web::E
             eprintln!("{}", e);
             HttpResponse::InternalServerError().finish()
         })?;
+
+    Ok(HttpResponse::Ok().json(posts))
+}
+
+#[get("/api/{subject}")]
+async fn get_posts_filtered(
+    pool: web::Data<DbPool>,
+    subject: web::Path<String>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let conn = pool.get().unwrap();
+
+    let mut posts: Vec<Post> = web::block(move || get_all_posts(&conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    posts.retain(|post| post.subject_name == subject.0);
 
     Ok(HttpResponse::Ok().json(posts))
 }
