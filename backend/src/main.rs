@@ -49,14 +49,12 @@ async fn get_posts_filtered(
 ) -> Result<HttpResponse, actix_web::Error> {
     let conn = pool.get().unwrap();
 
-    let mut posts: Vec<Post> = web::block(move || get_all_posts(&conn))
+    let posts = web::block(move || get_posts_by_subject(&conn, &*subject.0))
         .await
         .map_err(|e| {
             eprintln!("{}", e);
             HttpResponse::InternalServerError().finish()
         })?;
-
-    posts.retain(|post| post.subject_name == subject.0);
 
     Ok(HttpResponse::Ok().json(posts))
 }
@@ -65,6 +63,17 @@ pub fn get_all_posts(conn: &SqliteConnection) -> Result<Vec<models::Post>, diese
     use crate::schema::posts::dsl::*;
 
     posts.load::<models::Post>(conn)
+}
+
+pub fn get_posts_by_subject(
+    conn: &SqliteConnection,
+    subject: &str,
+) -> Result<Vec<models::Post>, diesel::result::Error> {
+    use crate::schema::posts::dsl::*;
+
+    posts
+        .filter(subject_name.eq(subject))
+        .load::<models::Post>(conn)
 }
 
 pub fn insert_new_post(
