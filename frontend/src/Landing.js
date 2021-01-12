@@ -16,7 +16,12 @@ function Landing() {
                 <p>Strife</p>
               </div>
             </div>
-            <Image src="https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885__340.jpg" ALIGN="right" />
+            <Image src="https://lh3.googleusercontent.com/DttyZQpJepBHlNe4pXEMJ5H6c53d97tplli_vXusdzZbpeY5SDLO7NwqiUEgqJ5VeAxvVdLT5suK_zGbZ0GpAe4NrjWbQqIf17uK5i0=w1064-v0" align="right" style={{
+              alignContent: "right",
+              borderRadius: "8px",
+              width: "50%",
+              height: "auto"
+            }} />
             <br />
             <div style={{ fontSize: "18px" }}>
               <p>

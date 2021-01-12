@@ -6,22 +6,23 @@ import {
 } from "react-router-dom";
 import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form, ButtonToolbar, Badge } from "react-bootstrap";
 import Skeleton from 'react-loading-skeleton';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 async function postData(url = '', data = {}) {
     const response = await fetch(url, {
-      method: 'POST',
-      mode: 'cors',
-      cache: 'no-cache',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      redirect: 'follow',
-      referrerPolicy: 'no-referrer',
-      body: JSON.stringify(data)
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        body: JSON.stringify(data)
     });
     return response.json();
-}  
+}
 
 class PreSchool extends Component {
     constructor(props) {
@@ -34,21 +35,19 @@ class PreSchool extends Component {
     }
 
     componentDidMount() {
-        // fetch('https://jsonplaceholder.typicode.com/comments').then(resp => resp.json())
-        //     .then((json) => this.setState({ subjectArray: json }))
         this.setState({
             subjectArray: [
-                { name: "Math", id: "000000" },
-                { name: "Science", id: "000001" },
-                { name: "English", id: "000002" },
-                { name: "Social Studies", id: "000003" }
+                { name: "Math", id: "1f4b7f1a-a8f1-4868-80b8-535ebc2e5d92" },
+                { name: "Science", id: "f99aaf6a-e654-4636-a39c-1126fe22e014" },
+                { name: "English", id: "8bc96b8b-2e74-46c5-8b85-efb8014ca822" },
+                { name: "Social Studies", id: "76650326-ff8d-41b3-947c-93b1ff5ccd53" }
             ]
         })
     }
 
     renderSubjectList() {
         return this.state.subjectArray.map((data, index) => {
-            return <SubjectRow {...data} />
+            return <SubjectRow {...data} {...this.props} />
         })
     }
 
@@ -62,11 +61,6 @@ class PreSchool extends Component {
                             <p> View and select from our subject list below.</p>
                         </div>
                     </div>
-                    {/* <Button variant="warning" size="lg" block> General  </Button>
-                    <Button variant="warning" size="lg" block> Science </Button>
-                    <Button variant="warning" size="lg" block> English  </Button>
-                    <Button variant="warning" size="lg" block> History </Button>
-                    <Button variant="warning" size="lg" block> Math  </Button> */}
                     {this.renderSubjectList()}
                 </div>
             </div>
@@ -81,7 +75,10 @@ function SubjectRow(props) {
     const { pathname } = useLocation();
 
     return (
-        <Button variant="warning" size="lg" block onClick={() => history.push(`${pathname}/${props.id}`)}>{props.name || <Skeleton />}</Button>
+        <Button variant="warning" size="lg" block onClick={() => {
+            props.setSubjectName(props.name)
+            history.push(`${pathname}/${props.id}`)
+        }}>{props.name || <Skeleton />}</Button>
     )
 }
 
@@ -91,15 +88,21 @@ class Subject extends Component {
 
         this.titleInputRef = React.createRef();
         this.bodyInputRef = React.createRef();
-        
+
         this.state = {
-            name: "Test Subject",
-            postsArray: new Array(9).fill({ title: undefined, body: undefined, id: undefined, timestemp: undefined }),
+            id: this.props.subjectId,
+            postsArray: undefined,
+            buttonText: "Submit"
         }
     }
 
     componentDidMount() {
-        fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
+        fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.filter(e => e.subject_name === this.state.id) }))
+        this.checkPostInterval = setInterval(() => fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.filter(e => e.subject_name === this.state.id) })), 2000)
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.checkPostInterval)
     }
 
     renderPosts() {
@@ -109,21 +112,29 @@ class Subject extends Component {
     }
 
     async handlePost() {
-        if (!(this.titleInputRef.current.value || this.bodyInputRef.current.value)) return;
-        
+        if (!(this.titleInputRef.current.value || this.bodyInputRef.current.value)) {
+            this.setState({
+                buttonText: "Couldn't send; fill out all the fields!"
+            })
+            return;
+        }
+
         await postData(`${window.location.origin}/api`, {
             title: this.titleInputRef.current.value,
             body: this.bodyInputRef.current.value,
             school_id: "pwest",
-            subject_name: this.state.name
+            subject_name: this.state.id
         })
-
-        fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp }))
+        this.setState({
+            buttonText: "Posted!"
+        })
+        await fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.filter(e => e.subject_name === this.state.id) }))
     }
 
     render() {
         return (
             <Container style={{ marginTop: "20px" }}>
+                <h1>Viewing {this.props.subjectName}</h1>
                 <Row>
                     <Col>
                         <Form style={{
@@ -138,13 +149,16 @@ class Subject extends Component {
                                 <Form.Control ref={this.bodyInputRef} as="textarea" rows={3} placeholder="Text" />
                             </Form.Group>
                             <Button onClick={() => this.handlePost()} variant="primary">
-                                Submit
+                                {this.state.buttonText}
                             </Button>
                         </Form>
                     </Col>
                 </Row>
                 <Row>
-                    {this.renderPosts()}
+                    {this.state.postsArray ? this.renderPosts() : <CircularProgress color="secondary" style={{
+                        marginLeft: "50%",
+                        marginTop: "100px"
+                    }} /> }
                 </Row>
             </Container>
         )
@@ -192,61 +206,61 @@ function PostCard(props) {
 
 function CommentModal(props) {
     return (
-      <Modal
-        {...props}
-        size="lg"
-        aria-labelledby="contained-modal-title-vcenter"
-        centered
-      >
-        <Modal.Header>
-          <Modal.Title id="contained-modal-title-vcenter">
-            Create a Comment
+        <Modal
+            {...props}
+            size="lg"
+            aria-labelledby="contained-modal-title-vcenter"
+            centered
+        >
+            <Modal.Header>
+                <Modal.Title id="contained-modal-title-vcenter">
+                    Create a Comment
           </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-            <Form>
-                <Form.Group controlId="formComment">
-                <Form.Control type="comment" placeholder="Type comment here" />
-                </Form.Group>
-                <ButtonToolbar aria-label="Submit and cancel button groups" className="float-right">
-                    <ButtonGroup className="mr-2" aria-label="First Group">
-                        <Button onClick={props.onHide}>Submit</Button>
-                    </ButtonGroup>
-                    <ButtonGroup aria-label="Second Group">
-                        <Button variant="secondary" onClick={props.onHide}>Cancel</Button>
-                    </ButtonGroup>
-                </ButtonToolbar>
-            </Form>
-            <br />
-            <br />
-            <Card>
-                <Card.Body>
-                    <Card.Text>asjfjafj</Card.Text>
-                    <ButtonToolbar aria-label="Like and dislike button groups" className="float-left">
-                    <ButtonGroup aria-label="First group" size="sm" className="mr-1">
-                        <Button variant="dark">
-                            Reply
-                        </Button>
-                    </ButtonGroup>
-                    <ButtonGroup aria-label="Second group" size="sm" className="mr-1">
-                        <Button variant="success">
-                            <span role="img" aria-label="thumbsup">👍</span>
-                            <Badge pill variant="light">0</Badge>
-                        </Button>
-                    </ButtonGroup>
-                    <ButtonGroup aria-label="Third group" size="sm">
-                        <Button variant="danger">
-                            <span role="img" aria-label="thumbsdown">👎</span>
-                            <Badge pill variant="light">0</Badge>
-                        </Button>
-                    </ButtonGroup>
+            </Modal.Header>
+            <Modal.Body>
+                <Form>
+                    <Form.Group controlId="formComment">
+                        <Form.Control type="comment" placeholder="Type comment here" />
+                    </Form.Group>
+                    <ButtonToolbar aria-label="Submit and cancel button groups" className="float-right">
+                        <ButtonGroup className="mr-2" aria-label="First Group">
+                            <Button onClick={props.onHide}>Submit</Button>
+                        </ButtonGroup>
+                        <ButtonGroup aria-label="Second Group">
+                            <Button variant="secondary" onClick={props.onHide}>Cancel</Button>
+                        </ButtonGroup>
                     </ButtonToolbar>
-                </Card.Body>
-            </Card>
-        </Modal.Body>
-      </Modal>
+                </Form>
+                <br />
+                <br />
+                <Card>
+                    <Card.Body>
+                        <Card.Text>Comment</Card.Text>
+                        <ButtonToolbar aria-label="Like and dislike button groups" className="float-left">
+                            <ButtonGroup aria-label="First group" size="sm" className="mr-1">
+                                <Button variant="dark">
+                                    Reply
+                        </Button>
+                            </ButtonGroup>
+                            <ButtonGroup aria-label="Second group" size="sm" className="mr-1">
+                                <Button variant="success">
+                                    <span role="img" aria-label="thumbsup">👍</span>
+                                    <Badge pill variant="light">0</Badge>
+                                </Button>
+                            </ButtonGroup>
+                            <ButtonGroup aria-label="Third group" size="sm">
+                                <Button variant="danger">
+                                    <span role="img" aria-label="thumbsdown">👎</span>
+                                    <Badge pill variant="light">0</Badge>
+                                </Button>
+                            </ButtonGroup>
+                        </ButtonToolbar>
+                    </Card.Body>
+                </Card>
+            </Modal.Body>
+        </Modal>
     );
-  }
+}
 
 function ContentDisplay() {
     // const { path } = use
@@ -255,14 +269,15 @@ function ContentDisplay() {
     const schoolId = pathArray[1];
     const subjectId = pathArray[2];
     const { history } = useHistory();
+    const [subjectName, setSubjectName] = useState(undefined);
+
     if (schoolId && subjectId) {
         return (
-            <Container><Subject schoolId={schoolId} subjectId={subjectId} /></Container>
-
+            <Container><Subject schoolId={schoolId} subjectId={subjectId} subjectName={subjectName} /></Container>
         )
     } else if (schoolId || subjectId) {
         return (
-            <Container><School schoolId={schoolId} /></Container>
+            <Container><School schoolId={schoolId} setSubjectName={setSubjectName} /></Container>
         )
     } else {
         return null;
