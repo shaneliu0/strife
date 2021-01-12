@@ -5,7 +5,7 @@ use actix_web::{get, guard, post, web, App, HttpResponse, HttpServer, Responder,
 extern crate diesel;
 extern crate dotenv;
 
-use crate::models::Post;
+// use crate::models::Post;
 
 use actix_files as fs;
 use std::env;
@@ -196,6 +196,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(pool.clone())
             .service(get_posts)
+            .service(get_posts_filtered)
             .service(create_post)
             .service(get_post_by_id)
             .service(fs::Files::new("/static", "../frontend/build/static"))
