@@ -14,7 +14,7 @@ function Main() {
           <LinkContainer to="/">
             <Navbar.Brand>
               <img
-                src={process.env.PUBLIC_URL + "/images/brand.png"}
+                src={"https://nerdist.com/wp-content/uploads/2019/04/House-Targaryen-sigil.jpg"}
                 style={{
                   height: "35px",
                   width: "auto",
