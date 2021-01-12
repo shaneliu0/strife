@@ -42,7 +42,7 @@ async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, actix_web::E
     Ok(HttpResponse::Ok().json(posts))
 }
 
-#[get("/api/{subject}")]
+#[get("/api/subject/{subject}")]
 async fn get_posts_filtered(
     pool: web::Data<DbPool>,
     subject: web::Path<String>,
