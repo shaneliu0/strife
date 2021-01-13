@@ -188,7 +188,7 @@ async fn main() -> std::io::Result<()> {
             None
         }
     }
-    .unwrap_or(6969);
+    .unwrap_or(8080);
 
     println!("Starting server on port {}...", port);
 

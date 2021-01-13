@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import {
     useLocation,
     withRouter,
@@ -7,6 +7,24 @@ import {
 import { Jumbotron, Modal, Button, Container, Row, Col, Card, ButtonGroup, Form, ButtonToolbar, Badge } from "react-bootstrap";
 import Skeleton from 'react-loading-skeleton';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import firebase from 'firebase/app';
+import 'firebase/analytics';
+import 'firebase/database';
+
+var firebaseConfig = {
+    apiKey: "AIzaSyCIkEPm1k9y9BCcfuLbVG8Fz5AMvbCLJ1Y",
+    authDomain: "strife-a45aa.firebaseapp.com",
+    databaseURL: "https://strife-a45aa-default-rtdb.firebaseio.com",
+    projectId: "strife-a45aa",
+    storageBucket: "strife-a45aa.appspot.com",
+    messagingSenderId: "166046051395",
+    appId: "1:166046051395:web:596a606710643ecf3838f6",
+    measurementId: "G-L3ZWHBHTN9"
+};
+
+!firebase.apps.length && firebase.initializeApp(firebaseConfig);
+firebase.analytics();
+const db = firebase.database();
 
 async function postData(url = '', data = {}) {
     const response = await fetch(url, {
@@ -31,7 +49,6 @@ class PreSchool extends Component {
         this.state = {
             subjectArray: new Array(10).fill({ name: undefined, id: undefined })
         }
-
     }
 
     componentDidMount() {
@@ -92,13 +109,17 @@ class Subject extends Component {
         this.state = {
             id: this.props.subjectId,
             postsArray: undefined,
-            buttonText: "Submit"
+            buttonText: "Submit",
         }
     }
 
+    checkForNewPosts() {
+        fetch(`${window.location.origin}/api/subject/${this.state.id}`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.reverse() }))
+    }
+
     componentDidMount() {
-        fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.filter(e => e.subject_name === this.state.id) }))
-        this.checkPostInterval = setInterval(() => fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.filter(e => e.subject_name === this.state.id) })), 2000)
+        this.checkForNewPosts();
+        this.checkPostInterval = setInterval(() => this.checkForNewPosts(), 2000)
     }
 
     componentWillUnmount() {
@@ -106,13 +127,13 @@ class Subject extends Component {
     }
 
     renderPosts() {
-        return this.state.postsArray.reverse().map((data, index) => {
+        return this.state.postsArray.map((data, index) => {
             return <Col sm={4}><PostCard {...data} /></Col>
         })
     }
 
     async handlePost() {
-        if (!(this.titleInputRef.current.value || this.bodyInputRef.current.value)) {
+        if ((!this.titleInputRef.current.value || !this.bodyInputRef.current.value)) {
             this.setState({
                 buttonText: "Couldn't send; fill out all the fields!"
             })
@@ -126,15 +147,19 @@ class Subject extends Component {
             subject_name: this.state.id
         })
         this.setState({
-            buttonText: "Posted!"
+            buttonText: "Posted!",
+            fieldValue: "",
         })
-        await fetch(`${window.location.origin}/api/all`).then(resp => resp.json()).then(resp => this.setState({ postsArray: resp.filter(e => e.subject_name === this.state.id) }))
+        this.setState({
+            fieldValue: undefined
+        })
+        this.checkForNewPosts();
     }
 
     render() {
         return (
             <Container style={{ marginTop: "20px" }}>
-                <h1>Viewing {this.props.subjectName}</h1>
+                <h1>Viewing {this.props.subjectName || "Subject"}</h1>
                 <Row>
                     <Col>
                         <Form style={{
@@ -143,10 +168,10 @@ class Subject extends Component {
                         }}>
                             <h3>Create a Post</h3>
                             <Form.Group controlId="formBasicText">
-                                <Form.Control ref={this.titleInputRef} required placeholder="Title" />
+                                <Form.Control value={this.state.fieldValue} ref={this.titleInputRef} required placeholder="Title" />
                             </Form.Group>
                             <Form.Group controlId="formBasicText">
-                                <Form.Control ref={this.bodyInputRef} as="textarea" rows={3} placeholder="Text" />
+                                <Form.Control value={this.state.fieldValue} ref={this.bodyInputRef} as="textarea" rows={3} placeholder="Text" />
                             </Form.Group>
                             <Button onClick={() => this.handlePost()} variant="primary">
                                 {this.state.buttonText}
@@ -158,7 +183,7 @@ class Subject extends Component {
                     {this.state.postsArray ? this.renderPosts() : <CircularProgress color="secondary" style={{
                         marginLeft: "50%",
                         marginTop: "100px"
-                    }} /> }
+                    }} />}
                 </Row>
             </Container>
         )
@@ -169,7 +194,61 @@ function PostCard(props) {
     const cardStyle = {
         margin: "10px"
     }
-    const [modalShow, setModalShow] = React.useState(false);
+    const [modalShow, setModalShow] = useState(false);
+    const [commentsArray, setCommentsArray] = useState(undefined)
+    const [likes, setLikes] = useState(0);
+    const [dislikes, setDislikes] = useState(0);
+
+    useEffect(() => {
+        let isMounted = true;
+        db.ref(`${props.id}`).on('value', snap => {
+            if (isMounted) {
+                let data = snap.val();
+                if (!data) return;
+
+                let newCommentsArray = [];
+                for (let commentKey in data.comments) {
+                    newCommentsArray.push({
+                        ...data.comments[commentKey],
+                        commentKey: commentKey
+                    })
+                }
+                setCommentsArray(newCommentsArray);
+
+                setLikes(data.rating && data.rating.likes ? data.rating.likes : 0)
+                setDislikes(data.rating && data.rating.dislikes ? data.rating.dislikes : 0)
+            }
+        })
+
+        return () => { isMounted = false }
+    }, [likes, dislikes, props.id])
+
+    const handleLike = async () => {
+        const data = likes;
+        if (!validateAndMarkRating(props.id)) {
+            return alert('You already rated!')
+        }
+
+        if (!data) {
+            db.ref(`${props.id}/rating/likes`).set(1);
+        } else {
+            db.ref(`${props.id}/rating/likes`).set(data + 1)
+        }
+    }
+
+    const handleDislike = async () => {
+        const data = dislikes;
+
+        if (!validateAndMarkRating(props.id)) {
+            return alert('You already rated!')
+        }
+
+        if (!data) {
+            db.ref(`${props.id}/rating/dislikes`).set(1);
+        } else {
+            db.ref(`${props.id}/rating/dislikes`).set(data + 1)
+        }
+    }
 
     return (
         <Card style={cardStyle}>
@@ -179,23 +258,25 @@ function PostCard(props) {
                     {props.body || <Skeleton count={10} />}
                 </Card.Text>
                 <Button variant="primary" size="sm" onClick={() => setModalShow(true)}>
-                    Comments
+                    Comments ({commentsArray ? commentsArray.length : 0})
                 </Button>
                 <CommentModal
                     show={modalShow}
                     onHide={() => setModalShow(false)}
+                    {...props}
+                    commentsArray={commentsArray}
                 />
                 <ButtonToolbar aria-label="Like and dislike button groups" className="float-right">
                     <ButtonGroup aria-label="Vote Group" size="sm" className="mr-1">
-                        <Button variant="success">
+                        <Button variant="success" onClick={() => handleLike()}>
                             <span role="img" aria-label="thumbsup">👍</span>
-                            <Badge pill variant="light">0</Badge>
+                            <Badge pill variant="light">{likes}</Badge>
                         </Button>
                     </ButtonGroup>
                     <ButtonGroup aria-label="Second group" size="sm">
-                        <Button variant="danger">
+                        <Button variant="danger" onClick={() => handleDislike()}>
                             <span role="img" aria-label="thumbsdown">👎</span>
-                            <Badge pill variant="light">0</Badge>
+                            <Badge pill variant="light">{dislikes}</Badge>
                         </Button>
                     </ButtonGroup>
                 </ButtonToolbar>
@@ -205,6 +286,25 @@ function PostCard(props) {
 }
 
 function CommentModal(props) {
+    const commentDataRef = React.useRef(undefined);
+    const [loading, setLoading] = useState(false);
+    const [formText, setFormText] = useState(undefined);
+
+    const handleComment = async (event) => {
+        if (!commentDataRef.current.value) return;
+        event.preventDefault();
+        setLoading(true);
+        await db.ref(`${props.id}/comments`).push({
+            text: commentDataRef.current.value,
+            likes: 0,
+            dislikes: 0,
+            time: new Date().getTime()
+        });
+        setLoading(false);
+        setFormText("");
+        setFormText(undefined);
+    }
+
     return (
         <Modal
             {...props}
@@ -218,13 +318,15 @@ function CommentModal(props) {
           </Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <Form>
+                <Form onSubmit={handleComment}>
                     <Form.Group controlId="formComment">
-                        <Form.Control type="comment" placeholder="Type comment here" />
+                        <Form.Control value={formText} ref={commentDataRef} type="comment" placeholder="Type comment here" />
                     </Form.Group>
                     <ButtonToolbar aria-label="Submit and cancel button groups" className="float-right">
                         <ButtonGroup className="mr-2" aria-label="First Group">
-                            <Button onClick={props.onHide}>Submit</Button>
+                            <div>
+                                <Button disabled={loading} onClick={handleComment}>Submit {loading && <CircularProgress size={24} style={{ marginTop: "5px" }} />}</Button>
+                            </div>
                         </ButtonGroup>
                         <ButtonGroup aria-label="Second Group">
                             <Button variant="secondary" onClick={props.onHide}>Cancel</Button>
@@ -234,32 +336,78 @@ function CommentModal(props) {
                 <br />
                 <br />
                 <Card>
-                    <Card.Body>
-                        <Card.Text>Comment</Card.Text>
-                        <ButtonToolbar aria-label="Like and dislike button groups" className="float-left">
-                            <ButtonGroup aria-label="First group" size="sm" className="mr-1">
-                                <Button variant="dark">
-                                    Reply
-                        </Button>
-                            </ButtonGroup>
-                            <ButtonGroup aria-label="Second group" size="sm" className="mr-1">
-                                <Button variant="success">
-                                    <span role="img" aria-label="thumbsup">👍</span>
-                                    <Badge pill variant="light">0</Badge>
-                                </Button>
-                            </ButtonGroup>
-                            <ButtonGroup aria-label="Third group" size="sm">
-                                <Button variant="danger">
-                                    <span role="img" aria-label="thumbsdown">👎</span>
-                                    <Badge pill variant="light">0</Badge>
-                                </Button>
-                            </ButtonGroup>
-                        </ButtonToolbar>
-                    </Card.Body>
+                    {
+                        !props.commentsArray || props.commentsArray.length === 0 ? <h4 style={{ margin: "20px" }}>No comments yet!</h4> : (
+                            props.commentsArray.map((data, idx) => {
+                                return <Comment {...data} {...props} />
+                            })
+                        )
+                    }
                 </Card>
             </Modal.Body>
         </Modal>
     );
+}
+
+function Comment(props) {
+    const handleLike = async () => {
+        if (!validateAndMarkRating(props.commentKey)) {
+            return alert('You already rated!')
+        }
+
+        db.ref(`${props.id}/comments/${props.commentKey}/likes`).set(props.likes + 1)
+    }
+
+    const handleDislike = async () => {
+        if (!validateAndMarkRating(props.commentKey)) {
+            return alert('You already rated!')
+        }
+
+        db.ref(`${props.id}/comments/${props.commentKey}/dislikes`).set(props.dislikes + 1)
+    }
+
+    const timePosted = new Date(props.time);
+
+    return (
+        <Card.Body>
+            <Card.Text>{props.text}</Card.Text>
+            <ButtonToolbar aria-label="Like and dislike button groups" className="float-left">
+                <ButtonGroup aria-label="Second group" size="sm" className="mr-1">
+                    <Button variant="success" onClick={handleLike}>
+                        <span role="img" aria-label="thumbsup">👍</span>
+                        <Badge pill variant="light">{props.likes}</Badge>
+                    </Button>
+                </ButtonGroup>
+                <ButtonGroup aria-label="Third group" size="sm">
+                    <Button variant="danger" onClick={handleDislike}>
+                        <span role="img" aria-label="thumbsdown">👎</span>
+                        <Badge pill variant="light">{props.dislikes}</Badge>
+                    </Button>
+                </ButtonGroup>
+            </ButtonToolbar>
+            {props.time && <Card.Text>{`${timePosted.toDateString()} ${formatDateNumbers(timePosted.getHours() % 12)}:${formatDateNumbers(timePosted.getMinutes())}:${formatDateNumbers(timePosted.getSeconds())} ${timePosted.getHours() >= 12 ? 'PM' : 'AM'}`}</Card.Text>}
+        </Card.Body>
+    )
+}
+
+function formatDateNumbers(number) {
+    return ("0" + number).slice(-2)
+}
+
+function validateAndMarkRating(id) {
+    try {
+        const item = localStorage.getItem(id);
+
+        if (item) {
+            return false;
+        } else {
+            localStorage.setItem(id, "rated")
+            return true;
+        }
+    } catch (error) {
+        console.log(error);
+        return true;
+    }
 }
 
 function ContentDisplay() {
