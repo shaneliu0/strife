@@ -29,11 +29,8 @@ function Main() {
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="mr-auto">
-              <LinkContainer to="/app">
-                <Nav.Link>{"Home"}</Nav.Link>
-              </LinkContainer>
               <LinkContainer to="/resources">
-                <Nav.Link>{"Schools"}</Nav.Link>
+                <Nav.Link>{"Subjects"}</Nav.Link>
               </LinkContainer>
             </Nav>
           </Navbar.Collapse>

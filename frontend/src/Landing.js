@@ -3,7 +3,7 @@ import { Jumbotron, Container } from 'react-bootstrap';
 import { Modal, Button } from 'react-bootstrap';
 import Image from 'react-bootstrap/Image'
 import { Form, FormControl } from 'react-bootstrap';
-
+import { LinkContainer } from "react-router-bootstrap";
 
 function Landing() {
   return (
@@ -30,18 +30,11 @@ function Landing() {
             </div>
             <br />
             <p>
-              To read or view our posts, Strife asks for your <b>highschool or college name</b>.
-            <br /><br />We ensure that the rest of your identity will be <b>anonymous</b>.
-          </p>
+              <LinkContainer to="/subjects">
+                <Button>Get Started</Button>
+              </LinkContainer>
+            </p>
             <br />
-            <div style={{ width: "45%" }}>
-              <Form>
-                <Form.Group controlId="formGroupSchool">
-                  <Form.Label><b>Enter School Name</b></Form.Label>
-                  <Form.Control type="school" placeholder="Enter school" />
-                </Form.Group>
-              </Form>
-            </div>
             <br />
             <br />
             <br />
